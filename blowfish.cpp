@@ -13,10 +13,11 @@ using namespace std;
 
 /**
  * @brief struct type to hold encrypted strings as half-block arrays
- * 
+ *
  */
-typedef struct encrypted_string_t {
-    int32 * array;
+typedef struct encrypted_string_t
+{
+    int32 *array;
     size_t size;
 } encrypted_string;
 
@@ -115,27 +116,26 @@ void gen_P(int32 *key, int32 key_len)
 
 /**
  * @brief function to convert an array of half-block data to a string
- * 
- * @param blocks array of 32-bit half-blocks 
+ *
+ * @param blocks array of 32-bit half-blocks
  * @param length length of the array
  * @return string the string representative of the array
  */
-string blocks_to_string(int32* blocks, size_t length)
+string blocks_to_string(int32 *blocks, size_t length)
 {
-    string s = "";
+    string s = ""; // the string to construct
     for (int i = 0; i < length; i++)
-    {
-        plaintext.append(1, (char)((ciphertext[i] & 0xff000000) >> 24));
-        plaintext.append(1, (char)((ciphertext[i] & 0x00ff0000) >> 16));
-        plaintext.append(1, (char)((ciphertext[i] & 0x0000ff00) >> 8));
-        plaintext.append(1, (char)(ciphertext[i] & 0x000000ff));
+    { // bit-shift the 32-bit integer values into appropriate characters and append them to the string
+        s.append(1, (char)((blocks[i] & 0xff000000) >> 24));
+        s.append(1, (char)((blocks[i] & 0x00ff0000) >> 16));
+        s.append(1, (char)((blocks[i] & 0x0000ff00) >> 8));
+        s.append(1, (char)(blocks[i] & 0x000000ff));
     }
+    return s;
 }
 
 int32 *encrypt(string message)
 {
-    encrypted_string CIPHERTEXT;
-
 
     // generate a C string from the message
     int message_len = message.length() + 1;
@@ -161,34 +161,27 @@ int32 *encrypt(string message)
         ciphertext[i] = blockL;
         ciphertext[i + 1] = blockR;
     }
+    encrypted_string CIPHERTEXT;
+    CIPHERTEXT.array = ciphertext;
     return ciphertext;
 }
 
 /**
- * @brief 
+ * @brief
  * @todo finish this!!
- * 
- * @param ciphertext 
- * @return string 
+ *
+ * @param ciphertext
+ * @return string
  */
 string decrypt(int32 *ciphertext, size_t length)
 {
-    string plaintext = "";
     // take each half-block pair and decrypt them
     for (int i = 0; i < length; i += 2)
     {
-        // int32 blockL = ciphertext[i];
-        // int32 blockR = ciphertext[i + 1];
-        blowfish_decrypt(&ciphertext[i], &ciphertext[i+1]);
+        blowfish_decrypt(&ciphertext[i], &ciphertext[i + 1]);
     }
-    for (int i = 0; i < length; i++)
-    {
-        plaintext.append(1, (char)((ciphertext[i] & 0xff000000) >> 24));
-        plaintext.append(1, (char)((ciphertext[i] & 0x00ff0000) >> 16));
-        plaintext.append(1, (char)((ciphertext[i] & 0x0000ff00) >> 8));
-        plaintext.append(1, (char)(ciphertext[i] & 0x000000ff));
-    }
-    return plaintext;
+    // return the decrypted blocks after converting them to string
+    return blocks_to_string(ciphertext, length);
 }
 
 int main(int argp, char *argv[])
@@ -197,7 +190,7 @@ int main(int argp, char *argv[])
     printf("the key is: %d\n", key);
     gen_P(&key, 1);
 
-    string text = "Skyler! XD";
+    string text = "Skyler stinky!";
 
     // pad the message string to be block-divisible
     if ((text.length() + 1) % blocklen)
@@ -210,35 +203,24 @@ int main(int argp, char *argv[])
     size_t ciphertext_length = (text.length() + 1) / blocklen * 2;
     printf("ciphertext length: %ld half-blocks\n", ciphertext_length);
 
-
     int32 blockL = ciphertext[0], blockR = ciphertext[1];
 
-    char encrypted[9];
-    encrypted[0] = (blockL & 0xff000000)>>24;
-    encrypted[1] = (blockL & 0x00ff0000)>>16;
-    encrypted[2] = (blockL & 0x0000ff00)>>8;
-    encrypted[3] = (blockL & 0x000000ff);
-    encrypted[4] = (blockR & 0xff000000)>>24;
-    encrypted[5] = (blockR & 0x00ff0000)>>16;
-    encrypted[6] = (blockR & 0x0000ff00)>>8;
-    encrypted[7] = (blockR & 0x000000ff);
-    encrypted[8] = '\0';
+    // char encrypted[9];
+    // encrypted[0] = (blockL & 0xff000000) >> 24;
+    // encrypted[1] = (blockL & 0x00ff0000) >> 16;
+    // encrypted[2] = (blockL & 0x0000ff00) >> 8;
+    // encrypted[3] = (blockL & 0x000000ff);
+    // encrypted[4] = (blockR & 0xff000000) >> 24;
+    // encrypted[5] = (blockR & 0x00ff0000) >> 16;
+    // encrypted[6] = (blockR & 0x0000ff00) >> 8;
+    // encrypted[7] = (blockR & 0x000000ff);
+    // encrypted[8] = '\0';
 
+    string encrypted = blocks_to_string(ciphertext, ciphertext_length);
     string decrypted = decrypt(ciphertext, ciphertext_length);
-
-    // char decrypted[9];
-    // decrypted[0] = (blockL & 0xff000000)>>24;
-    // decrypted[1] = (blockL & 0x00ff0000)>>16;
-    // decrypted[2] = (blockL & 0x0000ff00)>>8;
-    // decrypted[3] = (blockL & 0x000000ff);
-    // decrypted[4] = (blockR & 0xff000000)>>24;
-    // decrypted[5] = (blockR & 0x00ff0000)>>16;
-    // decrypted[6] = (blockR & 0x0000ff00)>>8;
-    // decrypted[7] = (blockR & 0x000000ff);
-    // decrypted[8] = '\0';
 
     printf("the plaintext is: %s\n", text.c_str());
     // printf("the ciphertext is: %d\n", ciphertext[0]);
-    printf("the ciphertext encrypted is:             %s       \n",encrypted);
-    printf("the plaintext decrypted is:   %s       \n",decrypted.c_str());
+    printf("the ciphertext encrypted is:            \n%s\n", encrypted.c_str());
+    printf("the plaintext decrypted is:   \n%s\n", decrypted.c_str());
 }
