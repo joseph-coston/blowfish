@@ -115,6 +115,30 @@ void gen_P(int32 *key, int32 key_len)
 }
 
 /**
+ * @brief adds padding to the end of a string to make it a full
+ *      multiple of n-blocks long
+ *
+ * @param s the string to pad
+ * @return string the padded string
+ */
+string append_block_padding(string s)
+{
+    if ((s.length() + 1) % blocklen)
+    {
+        int pad_width = blocklen - ((s.length() + 1) % blocklen);
+        s.append(pad_width, (char)pad_width);
+    }
+    return s;
+}
+
+string remove_block_padding(string s)
+{
+    if (s.back() < blocklen){
+        
+    }
+}
+
+/**
  * @brief function to convert an array of half-block data to a string
  *
  * @param blocks array of 32-bit half-blocks
@@ -193,11 +217,7 @@ int main(int argp, char *argv[])
     string text = "Skyler stinky!";
 
     // pad the message string to be block-divisible
-    if ((text.length() + 1) % blocklen)
-    {
-        int pad_width = blocklen - ((text.length() + 1) % blocklen);
-        text.append(pad_width, (char)pad_width);
-    }
+    text = append_block_padding(text);
 
     int32 *ciphertext = encrypt(text);
     size_t ciphertext_length = (text.length() + 1) / blocklen * 2;
